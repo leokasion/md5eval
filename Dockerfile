@@ -30,4 +30,4 @@ USER appuser
 EXPOSE 8000
 
 # Use uvicorn as the ASGI server production worker
-CMD ["uvicorn", "main.:app", "--host", "0.0.0.0", "--port", "0.0.0.0"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
