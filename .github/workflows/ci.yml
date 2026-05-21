@@ -1,0 +1,83 @@
+name: md5eval CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1.Checkout the source code from GitHub repo
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2.Cache Python dependencies to accelerate build
+      - name: Setup Python Dependency Cache
+        uses: actions/cache@v4
+        with: 
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # 3. Cache Docker image layers to accelerate continuous interactions
+      - name: Setup Docker Layer Cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # 4. Initialize Docker Buildx for advanced multi-stage caching options
+      - name: Set up Docker Buildx
+        uses: actions/github-actions/setup-buildx@master
+
+      # 5. Execute the local build script requested by the challenge parameters
+      - name: Compile Infraestructure Layers
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      # 6. Deploy the network topology using the local start script
+      - name: Spin Up Environment
+        run: |
+          chmod +x start.sh
+          ./start.sh
+
+      # 7. SRE Validation Block: Run a real health check loop against the proxy edge
+      - name: Execute Live Infraestructure Healthcheck
+        run: |
+          chmod +x healthcheck.sh
+          
+          #we loop for about 15 secs
+          echo "Waiting for NGINX edge proxy to signal readiness..."
+          TIMEOUT=15
+          while [ $TIMEOUT -gt 0 ]; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/health || echo "FAIL")
+            if [ "$STATUS" = "200" ]; then
+              echo "Infrastructure validation succesfful! HTTP 200 OK received from proxy."
+              break
+            fi
+            echo "Proxy returned $STATUS, retrying in 3 seconds... ($TIMEOUT attempts left)"
+            sleep 3
+            TIMEOUT=$((TIMEOUT - 3))
+          done
+
+          if [ $TIMEOUT -le 0 ]; then
+            echo "CRITICAL ERROR: Infrastructure health check timed out."
+            docker-compose logs
+            exit 1
+          fi
+
+      # 8. Clean up env states before the runner dc
+      - name: Purge Infrastructure State
+        if: always()
+        run: |
+          chmod +x stop.sh
+          ./stop.sh
+
