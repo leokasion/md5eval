@@ -70,7 +70,7 @@ jobs:
 
           if [ $TIMEOUT -le 0 ]; then
             echo "CRITICAL ERROR: Infrastructure health check timed out."
-            docker-compose logs
+            docker compose logs
             exit 1
           fi
 
