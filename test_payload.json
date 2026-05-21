@@ -1,0 +1,16 @@
+{
+    "date": {
+        "year": "2026",
+        "month": "05",
+        "day": "21"
+    },
+    "md5": "f626dbf09335fc1c960a41c5f55a3d2b",
+    "status": "active",
+    "id": 101,
+    "name": "Leandro",
+    "metadata": {
+        "tags": ["devops", "sre"],
+        "region": "us-east"
+    }
+}
+
