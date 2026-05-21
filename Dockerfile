@@ -25,7 +25,7 @@ COPY main.py .
 
 # Hardening: Run as a non-privileged system user instead of root
 RUN useradd -u 10001 -m appuser && chown -R appuser:appuser /app
-RUN appuser
+USER appuser
 
 EXPOSE 8000
 
