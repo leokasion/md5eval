@@ -69,16 +69,15 @@ Para cumplir con el requerimiento de validar de forma exacta y deterministica el
 
 1. **Parseo y Modelado Estricto:** El payload entrante es interceptado y validado en su estructura mediante **Pydantic v2** (`ValidationRequest`).
 2. **Aislamiento de la Firma (Separacion de Incumbencias):** Antes de calcular el hash, convertimos el modelo en un diccionario nativo y removemos el campo `"md5"` utilizando `data_dict.pop("md5", None)`. Esto es fundamental para evitar un bucle de dependencia mutua (donde cambiar el valor del hash alteraría el resultado del hash mismo).
-3. **Serializacion Determinista:** El diccionario restante (con los campos `date`, `status`, `id`, `name`, `metadata`) se serializa a texto plano usando `json.dumps(data_dict, sort_keys=True, separators=(',', ':'))`. 
+3. **Serializacion Determinista:** El diccionario restante (con los campos `date`, `status`, `id`, `name`, `metadata`) se serializa a texto plano usando
+   `json.dumps(data_dict, sort_keys=True, separators=(',', ':'))`. 
    * `sort_keys=True` fuerza un ordenamiento alfabetico estricto de las claves.
    * `separators=(',', ':')` elimina cualquier espacio en blanco remanente de la estructura tipografica.
-4. **Hashing:** La cadena resultante y compactada se codifica en `utf-8` y se procesa con la librería nativa `hashlib.md5` para su posterior comparación con la firma enviada por el cliente.
+5. **Hashing:** La cadena resultante y compactada se codifica en `utf-8` y se procesa con la librería nativa `hashlib.md5` para su posterior comparación con la firma enviada por el cliente.
 
 ### Justificación de Componentes
 * **FastAPI + Uvicorn:** Elegido por su alto rendimiento asincronico nativo y la velocidad de validacion de esquemas que provee Pydantic en la capa de datos, sumado a que el ejercicio asi lo requiere. Si bien estoy mas familiarizado con Flask, no tuve problema con OpenAPI asi que no me puedo quejar; con respecto al webserver, el de Flask se llama Gunicorn (Green Unicorn). El mundo de Python esta lleno de extrañas creaturas.  
 * **Nginx Reverse Proxy (Fase de Contenedores):** Requerido para "soltar" el servidor de aplicaciones de la exposicion directa a la red, gestionando la terminación del trafico en el puerto estandar 80 y mapeando internamente el mismo hacia el puerto 8000 del contenedor de FastAPI de forma transparente.
-
----
 
 ## 4. Supuestos, Riesgos y Consideraciones para Produccion
 
