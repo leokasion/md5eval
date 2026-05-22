@@ -139,8 +139,8 @@ De acuerdo a la especificacion oficial del estandar:
 * **Sección 3.2.1 (Whitespace):** Determina de forma tajante que *"Whitespace MUST NOT be generated"* (No se deben generar espacios en blanco). Esto se mapea en nuestro codigo utilizando separadores compactos (`separators=(',', ':')`) para purgar cualquier formateo o indentación del cliente.\
 
 *Pense mucho en hacer este script con Golang para comparar bit por bit, en vez de Python; de hecho comence a trabajar con el primero, pero me di cuenta a medida que armaba el "esqueleto" y la cantidad de lineas de codigo crecian, que quizas estaria corto de tiempo, sobre todo al tener que hacerlo pasar por el pipeline de GitHub Actions, que todavia tiene problemas con Go. Esta fue la razon por la que decidi utilizar Python y estoy adviertiendo sobre ordenar alfabeticamente los bloques de JSON antes de compararlos criptograficamente via MD5, por que si bien:\
-{ "a:1" }{ "b:2" } == { "b:1" }{ "a:2" } para el uso cotidiano de JSON, no es lo mismo para el resultado del MD5.*
-   
+{ "a": 1, "b": 2 } == { "b": 2, "a": 1 } para el uso cotidiano de lectura en JSON, no representan lo mismo para el resultado binario del hash MD5.
+
 1. **Parseo y Modelado Estricto:** El payload entrante es interceptado y validado en su estructura mediante **Pydantic v2** (`ValidationRequest`).
 2. **Aislamiento de la Firma (Separacion de Incumbencias):** Antes de calcular el hash, convertimos el modelo en un diccionario nativo y removemos el campo `"md5"` utilizando `data_dict.pop("md5", None)`. Esto es fundamental para evitar un bucle de dependencia mutua (donde cambiar el valor del hash alteraría el resultado del hash mismo).
 3. **Serializacion Determinista:** El diccionario restante (con los campos `date`, `status`, `id`, `name`, `metadata`) se serializa a texto plano usando
