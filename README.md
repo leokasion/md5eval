@@ -24,6 +24,7 @@ Se recomienda abrir un Uvicorn y dejarlo corriendo en foreground en otra tab en 
 ```bash
 $ ./venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
+#### _Si se utiliza el entorno de Docker Compose a través de ./start.sh, remover el puerto de los comandos para apuntar directamente al puerto estándar 80 gestionado por Nginx._
 
 ### Ejemplos de la devolucion de datos del servidor...
 #### Health check (GET 200 OK)
