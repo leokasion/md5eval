@@ -64,7 +64,7 @@ content-type: application/json
 
 ## 3. Decisiones Tecnicas y Calculo del MD5
 
-### Estrategia de Canonicalización Criptográfica
+### Estrategia de Canonicalizacion Criptografica
 Para cumplir con el requerimiento de validar de forma exacta y deterministica el contenido enviado sin importar como el cliente altere el formato del archivo JSON (espacios, saltos de línea o identacion), se implementó la siguiente logica en el backend:
 
 1. **Parseo y Modelado Estricto:** El payload entrante es interceptado y validado en su estructura mediante **Pydantic v2** (`ValidationRequest`).
@@ -75,23 +75,17 @@ Para cumplir con el requerimiento de validar de forma exacta y deterministica el
 4. **Hashing:** La cadena resultante y compactada se codifica en `utf-8` y se procesa con la librería nativa `hashlib.md5` para su posterior comparación con la firma enviada por el cliente.
 
 ### Justificación de Componentes
-* **FastAPI + Uvicorn:** Elegido por su alto rendimiento asincronico nativo sobre la especificación ASGI y la velocidad de validación de esquemas que provee Pydantic en la capa de datos, sumado a que el ejercicio asi lo requeria. Por mi hubiese utilizado Flask por que estoy mas familiarizado, pero no tuve problema con OpenAPI asi que no me puedo quejar; con respecto al webserver, el de Flask se llama Gunicorn (Green Unicorn). El mundo de Python esta lleno de extrañas creaturas.  
-* **Nginx Reverse Proxy (Fase de Contenedores):** Requerido para "desacoplar" el servidor de aplicaciones de la exposición directa a la red, gestionando la terminación del trafico en el puerto estándar 80 y mapeando internamente el upstream hacia el puerto 8000 del contenedor de FastAPI de forma transparente.
+* **FastAPI + Uvicorn:** Elegido por su alto rendimiento asincronico nativo y la velocidad de validacion de esquemas que provee Pydantic en la capa de datos, sumado a que el ejercicio asi lo requiere. Si bien estoy mas familiarizado con Flask, no tuve problema con OpenAPI asi que no me puedo quejar; con respecto al webserver, el de Flask se llama Gunicorn (Green Unicorn). El mundo de Python esta lleno de extrañas creaturas.  
+* **Nginx Reverse Proxy (Fase de Contenedores):** Requerido para "soltar" el servidor de aplicaciones de la exposicion directa a la red, gestionando la terminación del trafico en el puerto estandar 80 y mapeando internamente el mismo hacia el puerto 8000 del contenedor de FastAPI de forma transparente.
 
 ---
 
-## 4. Supuestos, Riesgos y Consideraciones para Producción (DevSecOps)
-
-### Supuestos y Limitaciones Actuales
-* **Carga en Memoria:** El endpoint asume payloads JSON de tamaño moderado. Al realizar un mapeo de todo el árbol de datos a memoria a través de Pydantic, archivos masivos (en el orden de gigabytes) podrían comprometer los recursos de la arquitectura local si no se limita el tamaño del body en el proxy de entrada.
-* **Tipado de Fecha Variable:** El campo `date` está mapeado como un diccionario libre en el modelo base para admitir subestructuras dinámicas complejas (por ejemplo: `year`, `month`, `day`).
+## 4. Supuestos, Riesgos y Consideraciones para Produccion
 
 ### Plan de Ajustes para Entornos Productivos de Escala Enterprise
-Si esta solución requiriera migrar hacia un clúster de alta disponibilidad bajo demanda, se aplicarían las siguientes directrices operativas:
+Si esta solución requiriera migrar hacia un cluster, se aplicarían los siguientes cambios operativos:
 
-* **Despliegue y Rollback:** Implementación de estrategias de despliegue tipo **Blue-Green** o **Canary** mediante manifiestos nativos de Kubernetes (reemplazando Docker Compose) combinados con ArgoCD para GitOps, permitiendo rollbacks instantáneos ante fallos detectados por métricas de error de HTTP.
-* **Manejo de Secrets:** Migración de cualquier configuración en texto plano hacia un inyector dinámico de variables de entorno en tiempo de ejecución, utilizando **HashiCorp Vault** o **AWS Secrets Manager**, desacoplando credenciales del código fuente.
-* **Observabilidad (Logs y Métricas):** Configuración de un formateador de logging estructurado en formato **JSON estructurado** nativo para la app y Nginx, integrando el flujo de logs hacia un stack centralizado de telemetría (**Grafana Loki** o **ELK Stack**), junto con un exportador de métricas de Prometheus para generar alertas basadas en tasas de error 5xx o latencias atípicas.
-* **Seguridad y Escaneo:** Integración en la pipeline de CI/CD de herramientas de escaneo de vulnerabilidades estáticas (SAST con **Trivy** o **Snyk**) tanto para las dependencias de Python en el entorno virtual como para las capas base de la imagen en el Dockerfile.
-* **Registry y Versionado:** Almacenamiento y firmado criptográfico de imágenes Docker en un registro seguro (como AWS ECR o Harbor), tagueando rigurosamente cada build mediante el hash corto de Git (`SHA`) o versionado semántico formal (`vX.Y.Z`), prohibiendo terminantemente el uso del tag genérico `latest`.
-* **Límites de Recursos:** Definición explícita de límites físicos (`limits`) y reservas bajo demanda
+* **Manejo de Secrets:** Migrar cualquier configuracion en texto plano hacia un inyector dinamico de variables de entorno en tiempo de ejecución. En entornos de Kubernetes, esto se resolvera "desacoplando" las credenciales mediante objetos nativos `kind: Secret` referenciados en los archivos de despliegue (los archivos YAML), o integrando un proveedor externo centralizado como **AWS Secrets Manager** para cargas de trabajo críticas de produccion, evitando exponer datos sensibles en el historial de comandos o archivos de configuración.
+* **Observabilidad (Logs y Metricas):** En una infraestructura de produccion real, se puede integrar el flujo de logs hacia un stack centralizado de telemetría (**Grafana Loki** o **ELK Stack**), junto con un exportador de metricas de Prometheus para generar alertas basadas en tasas de error 5xx o latencias atípicas. Esto seria una exageracion para un script tan pequeño, pero vale la pena mencionarlo.
+* **Seguridad y Escaneo:** Integracion en la pipeline de CI/CD de herramientas de escaneo de vulnerabilidades estáticas (con **Trivy** o **Snyk**) tanto para las dependencias de Python en el entorno virtual como para las capas base de la imagen en el Dockerfile.
+* **Registro y Versionado:** Almacenamiento y firmado criptografico de imágenes Docker en un registro seguro (como **AWS ECR**), tagueando rigurosamente cada build mediante el hash corto de Git (`SHA`), prohibiendo terminantemente el uso del tag genérico `latest`.
