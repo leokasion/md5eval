@@ -33,7 +33,7 @@ remote: Compressing objects: 100% (40/40), done.
 remote: Total 58 (delta 25), reused 36 (delta 10), pack-reused 0 (from 0)
 Receiving objects: 100% (58/58), 15.90 KiB | 15.90 MiB/s, done.
 Resolving deltas: 100% (25/25), done.
-$ sudo docker-compose build #aqui utilizo `sudo` por que solo quiero probar mi script en mi localhost
+$ sudo docker-compose build #aqui utilizo `sudo` por que solo quiero probar el script en mi localhost
 
 [sudo] password for okasion:           
 nginx uses an image, skipping
@@ -136,9 +136,9 @@ content-type: application/json
 Para cumplir con el requerimiento de validar de forma exacta y deterministica el contenido enviado sin importar como el cliente altere el formato del archivo JSON (espacios, saltos de línea o identacion), se implemento una estrategia alineada estrictamente con el estandar internacional **RFC 8785 (JSON Canonicalization Scheme / JCS)**.
 De acuerdo a la especificacion oficial del estandar:
 * **Seccion 3.2.3 (Mapping Rules - Object):** Dictamina que *"The property members of an object MUST be sorted lexicographically by their property name strings, based on UTF-16 code units"* (Las propiedades deben ordenarse alfabeticamente). Esto se garantiza en el backend mediante el uso de `sort_keys=True` al serializar el payload.
-* **Sección 3.2.1 (Whitespace):** Determina de forma tajante que *"Whitespace MUST NOT be generated"* (No se deben generar espacios en blanco). Esto se mapea en nuestro codigo utilizando separadores compactos (`separators=(',', ':')`) para purgar cualquier formateo o indentación del cliente.\
+* **Sección 3.2.1 (Whitespace):** Determina de forma tajante que *"Whitespace MUST NOT be generated"* (No se deben generar espacios en blanco). Esto se mapea en nuestro codigo utilizando separadores compactos (`separators=(',', ':')`) para purgar cualquier formateo o indentación del cliente.
 
-*Pense mucho en hacer este script con Golang para comparar bit por bit, en vez de Python; de hecho comence a trabajar con el primero, pero me di cuenta a medida que armaba el "esqueleto" y la cantidad de lineas de codigo crecian, que quizas estaria corto de tiempo, sobre todo al tener que hacerlo pasar por el pipeline de GitHub Actions, que todavia tiene problemas con Go. Esta fue la razon por la que decidi utilizar Python y estoy adviertiendo sobre ordenar alfabeticamente los bloques de JSON antes de compararlos criptograficamente via MD5, por que si bien:\
+* Pense mucho en hacer este script con Golang para comparar bit por bit, en vez de Python; de hecho comence a trabajar con el primero, pero me di cuenta a medida que armaba el "esqueleto" y la cantidad de lineas de codigo crecian, que quizas estaria corto de tiempo, sobre todo al tener que hacerlo pasar por el pipeline de GitHub Actions, que todavia tiene problemas con Go. Esta fue la razon por la que decidi utilizar Python y estoy adviertiendo sobre ordenar alfabeticamente los bloques de JSON antes de compararlos criptograficamente via MD5, por que si bien:\
 { "a": 1, "b": 2 } == { "b": 2, "a": 1 } para el uso cotidiano de lectura en JSON, no representan lo mismo para el resultado binario del hash MD5.
 
 1. **Parseo y Modelado Estricto:** El payload entrante es interceptado y validado en su estructura mediante **Pydantic v2** (`ValidationRequest`).
